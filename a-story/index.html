@@ -1375,20 +1375,20 @@ function boardClipEnd(){
 }
 function setTitle(t){ const el = $('title'); el.dataset.t = t || ''; el.innerHTML = titleHTML(t); }
 const SF = (sub = '') => `<span class="sig">Σ</span><span class="vec">F</span>${sub ? `<sub class="math">${sub}</sub>` : ''}`;
-// The ten formula lines of the three lessons: a tag, where the formula comes from (a footnote on the board), and for
-// three of them a clip that derives it on the board.
+// The formula lines of the lessons: a tag, where the formula comes from (a footnote on the board), and for eight of
+// them a clip that derives it on the board (not for sumF, a definition, nor the three statements of a law).
 const POP = {
   sumF:{ tag:'แรงลัพธ์', from:'จากนิยามของแรงลัพธ์' },
-  sumFy:{ tag:'แรงในแนวแกน y', from:'จากกฎข้อที่หนึ่งของนิวตัน: กล่องไม่ขยับขึ้นลง จึงได้ ΣF<sub>y</sub> = 0' },
+  sumFy:{ tag:'แรงในแนวแกน y', clip:'sumfy', from:'จากกฎข้อที่หนึ่งของนิวตัน: กล่องไม่ขยับขึ้นลง จึงได้ ΣF<sub>y</sub> = 0' },
   newton2:{ tag:'แรงในแนวแกน x และความเร่ง', clip:'newton2', from:'จากกฎข้อที่สองของนิวตัน ΣF = ma' },
   law1:{ tag:'กฎการเคลื่อนที่ข้อที่ 1 ของนิวตัน', from:'จากกฎข้อที่หนึ่งของนิวตัน' },
   friction:{ tag:'แรงเสียดทาน', clip:'friction', from:'จากแรงเสียดทานจลน์ f = μN และ N = mg ในแกน y (ΣF<sub>y</sub> = 0)' },
-  sumFx:{ tag:'แรงลัพธ์ในแต่ละช่วง', from:'จากการรวมแรงในแกน x: แรงผลักไปข้างหน้า แรงเสียดทานต้านกลับ' },
-  suvat:{ tag:'หาจุดจอดของกล่อง', from:'จากสมการการเคลื่อนที่เมื่อความเร่งคงที่' },
+  sumFx:{ tag:'แรงลัพธ์ในแต่ละช่วง', clip:'sumfx', from:'จากการรวมแรงในแกน x: แรงผลักไปข้างหน้า แรงเสียดทานต้านกลับ' },
+  suvat:{ tag:'หาจุดจอดของกล่อง', clip:'stop', from:'จากสมการการเคลื่อนที่เมื่อความเร่งคงที่' },
   law3:{ tag:'ตอนกล่องชนที่กั้น', from:'จากกฎข้อที่สามของนิวตัน' },
   law3door:{ tag:'ตอนกล่องชนประตู', from:'จากกฎข้อที่สามของนิวตัน' },   // 3-18: the same, at the door of the friction room
-  xvt:{ tag:'ระยะตก x = v × t', from:'จาก s = ut + ½at² ในแนวราบ (a = 0) ได้ x = v t' },
-  flight:{ tag:'ระหว่างลอยกลางอากาศ', from:'จาก s = ut + ½at² ทีละแกน (แกน x: a = 0; แกน y: u = 0, a = g)' },
+  xvt:{ tag:'ระยะตก x = v × t', clip:'xvt', from:'จาก s = ut + ½at² ในแนวราบ (a = 0) ได้ x = v t' },
+  flight:{ tag:'ระหว่างลอยกลางอากาศ', clip:'flight', from:'จาก s = ut + ½at² ทีละแกน (แกน x: a = 0; แกน y: u = 0, a = g)' },
   projectile:{ tag:'หาเวลาลอยและความเร็ว', clip:'projectile', from:'จาก s = ut + ½at² ทีละแกน (แกน y: u = 0, a = g; แกน x: a = 0)' }
 };
 
@@ -1932,6 +1932,11 @@ function Level1(){
     // tip (m, the rod's end), lift (0…1, the front housing) }. The rod's moment out (phase 'rod') comes before t = 0, so
     // the motion and its numbers are the same as before; the arrow stays the physics, the rod is grey ink.
     rodPort(side){ return side > 0 ? ROD.con[1] : this.x0 + 0.4 + ROD.gap; },
+    // The push stretch drawn on the floor, [from, to] in m. Without the rod it is where the box's middle travels (to the
+    // left of the start when F < 0). With the rod it is where the rod's pad travels: from the box's back face at the
+    // start to where the rod stops, so the rod is seen pushing right to the end of it (the same stretch for F < 0,
+    // where the pad is on the front face and travels the other way).
+    zone(){ const z0 = this.rod ? this.x0 - 0.4 : this.aim() > 0 ? this.x0 : this.x0 - this.d; return [z0, z0 + this.d]; },
     beginPush(){                                      // the push starts: t = 0 from here, as it always did after the hop
       const c = this.box;
       this.phase = 'push'; this.timeScale = this.warp; this.t = 0;
@@ -2072,7 +2077,7 @@ function Level1(){
       const v = this.view, c = this.box, r = this.ry, s = v.s, f = this.f(), rough = this.mu > 0, aim = this.aim();
       drawFloor(v, { rough, label: rough ? `พื้นฝืด μ = ${this.mu.toFixed(2)}` : 'ลานน้ำแข็ง' });
       // the hand only pushes over this short stretch (to the left of the start when F < 0)
-      const z0 = aim > 0 ? this.x0 : this.x0 - this.d;
+      const z0 = this.zone()[0];
       ctx.fillStyle = 'rgba(255,159,58,.28)';
       ctx.fillRect(P(v, z0), v.gy + 1, this.d*s, 29);
       text('ช่วงผลัก', P(v, z0 + this.d/2), v.gy + 20, { size:13, align:'center', color:'#8a4d00' });
