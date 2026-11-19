@@ -544,7 +544,7 @@ const sleep = ms => { const id = runId; return new Promise(r => setTimeout(() =>
 
 /* ---------- student data → the teacher's Google Sheet (setup: README) ---------- */
 // Paste the Apps Script web-app URL here. Left empty, the data only queues up in this browser.
-const LOG_URL = '';
+const LOG_URL = 'https://script.google.com/macros/s/AKfycbxDnyx-9wpMEEpesY8zs_53YMNpjygU8WM67A9VI1xC5LX4ZSM-CSUsiMRm7YJfKr91/exec';
 // Which version of the game this is, when two are compared side by side: shown first in the browser tab's title and
 // as a small tag beside the heading on the title screen. '' shows nothing.
 const BUILD_LABEL = 'A';
@@ -562,8 +562,8 @@ const PART_NAME = { ch1:'ด่านที่ 1 : กฎข้อที่ 1 �
   sandbox:'ด่านที่ 1 (ท้าทาย) : มวลและสัมประสิทธิ์ความเสียดทาน', bonus:'ด่านพิเศษ : การเคลื่อนที่แบบโพรเจกไทล์',
   projLesson:'บทเรียน : การเคลื่อนที่แบบโพรเจกไทล์', end:'สรุป' };
 const store = {                        // localStorage can throw (private mode, blocked storage): never let it break the game
-  get(k, d){ try { const v = localStorage.getItem('nmg.' + k); return v == null ? d : JSON.parse(v); } catch (e){ return d; } },
-  set(k, v){ if (DBG.on) return; try { if (v == null) localStorage.removeItem('nmg.' + k); else localStorage.setItem('nmg.' + k, JSON.stringify(v)); } catch (e){} }
+  get(k, d){ try { const v = localStorage.getItem('nmg.friends.' + k); return v == null ? d : JSON.parse(v); } catch (e){ return d; } },
+  set(k, v){ if (DBG.on) return; try { if (v == null) localStorage.removeItem('nmg.friends.' + k); else localStorage.setItem('nmg.friends.' + k, JSON.stringify(v)); } catch (e){} }
 };
 // Debug mode (Konami code; the DEBUG block near the end of this script). Defined this early because nothing may be
 // stored or sent while it is on, not even by the code that runs at load. It lasts for this browser tab only.
@@ -918,7 +918,7 @@ const track = {
   /* sessions and sections (= where the time goes) */
   sessionRow(){
     const s = this.session;
-    return { deviceId:this.deviceId, startedAt:s.startedAt, entry:s.entry, runs:s.runs, lastStep:s.lastStep,
+    return { deviceId:this.deviceId, startedAt:s.startedAt, entry:'friends:' + s.entry, runs:s.runs, lastStep:s.lastStep,
       furthest:s.furthest, reachedEnd:s.reachedEnd, activeMin:r2(this.activeMs/60000),
       device:`${matchMedia('(pointer:coarse)').matches ? 'touch' : 'mouse'} ${screen.width}×${screen.height} · ${snd.tag()}` };
   },
