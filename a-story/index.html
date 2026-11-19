@@ -5403,8 +5403,8 @@ function feedback(){
     { html:`<div class="fb">
           <div class="fbRow"><span>เกมนี้ยากแค่ไหน</span>${scale('difficulty', 'เกมนี้ยากแค่ไหน', 'ง่ายมาก', 'ยากมาก')}</div>
           <div class="fbRow"><span>สนุกแค่ไหน</span>${scale('enjoyment', 'สนุกแค่ไหน', 'ไม่สนุกเลย', 'สนุกมาก')}</div>
-          <div class="fbRow"><span>ส่วนไหนยากที่สุด</span><div class="scale" data-k="hardest" role="group" aria-label="ส่วนไหนยากที่สุด">${parts.map(k =>
-            `<button data-v="${k}" aria-pressed="false">${PART_NAME[k]}</button>`).join('')}</div></div></div>`,
+          ${parts.length ? `<div class="fbRow"><span>ส่วนไหนยากที่สุด</span><div class="scale" data-k="hardest" role="group" aria-label="ส่วนไหนยากที่สุด">${parts.map(k =>
+            `<button data-v="${k}" aria-pressed="false">${PART_NAME[k]}</button>`).join('')}</div></div>` : ''}</div>`,
       read:() => ({ difficulty:num('difficulty'), enjoyment:num('enjoyment'), hardest:ans.hardest ? PART_NAME[ans.hardest] : '' }) },
     { html:`<div class="fb type">
           <div class="fbRow"><label for="fbQ">ยังสงสัยอะไรอยู่ไหม</label><textarea id="fbQ" maxlength="300" placeholder="ส่วนที่ยังไม่เข้าใจ หรือสิ่งที่อยากถาม (ไม่บังคับ)"></textarea></div>
@@ -5475,6 +5475,7 @@ function titleScreen(){
     <div class="whoHint" id="whoHint" aria-live="polite"></div>
     <div class="startRow"><button class="btnDark" id="start">เริ่มเล่น</button><button class="btnGhost btnBasics" id="basicsLong">ปูพื้นฐาน</button></div>
     <button class="btnGhost" id="resume" hidden></button>
+    <button class="btnGhost" id="toFeedback">ข้ามไปแบบสอบถาม</button>
     <div class="chapters"><button class="more" id="chapToggle" aria-controls="chapList"></button>
       <div class="list" id="chapList">${FULL_RUN.filter(k => !['end', 'basics', 'basicsLong'].includes(k)).map(k => `<button data-from="${k}">${PART_NAME[k]}</button>`).join('')}</div></div>`, 'ts');
   // The chapter list starts folded away, so a new player sees one way in. It is not opened for a device with
@@ -5535,6 +5536,7 @@ function titleScreen(){
   };
   $('start').onclick = () => go('ch1', 'start');
   $('basicsLong').onclick = () => go('basicsLong', 'start:basicsLong', null, true);
+  $('toFeedback').onclick = () => go('end', 'skip:feedback');   // straight to the survey (then สรุป), after the same name and class check
   // Enter does what เริ่มเล่น does; after a name with no class yet, it moves on to the class box.
   // stopPropagation: the same key press must not also reach the page's handler and skip the first line.
   [nameEl, roomEl].forEach(el => el.addEventListener('keydown', e => {
