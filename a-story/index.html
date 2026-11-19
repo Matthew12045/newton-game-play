@@ -174,6 +174,9 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
 .fillchk{background:var(--ink);color:#fff;border:none;border-radius:999px;padding:3px 14px;font:inherit;font-size:16px;cursor:pointer}
 .fillchk:disabled{opacity:.35;cursor:default}
 .fillbox.right .fillchk{display:none}
+.fillskip{display:none;background:none;color:var(--ink);border:1.5px solid #9aa3ae;border-radius:999px;padding:2px 12px;font:inherit;font-size:16px;cursor:pointer}
+.fillbox.now .fillskip{display:inline-block}
+.fillskip:disabled{opacity:.35;cursor:default}
 .fillrow{font-size:21px;line-height:1.6}
 .afterok{display:none!important}
 .board.wide{left:40px;width:840px}
@@ -553,7 +556,7 @@ const IDLE_MS = 60000;                 // no click/key/touch for this long = idl
 // basics (ปูพื้นฐาน) is played only when the challenge question in ด่านที่ 1 sent the student there (memo.path); after
 // ข or ง the student picks at IN-3: 'basics' (the short review) or 'long' (basicsLong, ปูพื้นฐานแบบเต็ม, then the short
 // review). basicsLong is also opened from the title screen on its own (run(['basicsLong'], …, { title:true })).
-const FULL_RUN = ['ch1', 'basicsLong', 'basics', 'lesson', 'fric', 'fricLesson', 'sandbox', 'bonus', 'end'];
+const FULL_RUN = ['ch1', 'basicsLong', 'basics', 'lesson', 'fric', 'fricLesson', 'sandbox', 'end'];   // branch storyboard-a-short: no bonus (projectile) part
 const skipStep = k => (k === 'basics' && memo.path !== 'basics' && memo.path !== 'long') || (k === 'basicsLong' && memo.path !== 'long');
 const nextStep = k => FULL_RUN.slice(FULL_RUN.indexOf(k) + 1).find(n => !skipStep(n)) || null;
 // formal part names: the chapter list, the เล่นต่อ button, the feedback form and the sheet all use these
@@ -1553,7 +1556,7 @@ function fillPanel(v){
    rejects the try with RETRY: the loop rewinds the scene and starts a fresh try with the panel's values. */
 const RETRY = Symbol('retry');
 let levelNow = null, stepNow = null, retryTry = null, panelSaved = null, playQueued = false, rewinding = false;
-const LEVEL_STEPS = ['ch1', 'fric', 'sandbox', 'bonus'];
+const LEVEL_STEPS = ['ch1', 'fric', 'sandbox'];
 function newTry(){
   rewinding = false;
   const abort = new Promise((_, rej) => { retryTry = rej; });
@@ -5019,7 +5022,7 @@ async function sandbox(o = {}){
           await say('yuan', '“มวลมากขึ้นหรือพื้นฝืดขึ้น แรงเสียดทาน f = μmg ก็มากขึ้น เลยต้องผลักแรงขึ้นตามไปด้วย”');
           board(null);
         }
-        mark('6-09'); const pick = await say('yuan', 'จะลองค่าอื่นอีก หรือไปต่อ?', { choices:['ลองค่าอื่นอีก', 'ไปด่านพิเศษ'] });
+        mark('6-09'); const pick = await say('yuan', 'จะลองค่าอื่นอีก หรือไปต่อ?', { choices:['ลองค่าอื่นอีก', 'ไปต่อ'] });
         if (pick === 1) break;
         stg = 'free';
         if (!freeTold){
@@ -5111,19 +5114,22 @@ function ask(id, q, opts, o = {}){
    and class afterok stays hidden until blank k is right. blanks() works the boxes of the board on screen. solve() takes
    one blank to a right answer: it waits for a number, marks it right or wrong (the value is mirrored into the html, so
    the back view shows what was typed), then the caller's respond(val, ok, n, given) says the line for that answer.
-   After o.give wrong tries (3) the answer is filled in for the student and respond gets given = true: nobody is stuck. */
-const fillBox = (k, label = 'ช่องกรอกตัวเลข') => `<span class="fillbox" data-k="${k}"><input class="fillin" type="text" inputmode="decimal" autocomplete="off" aria-label="${label}" disabled><button class="fillchk" disabled>ตรวจ</button></span>`;
+   After o.give wrong tries (3) the answer is filled in for the student and respond gets given = true: nobody is stuck.
+   ข้าม (on the blank being filled; branch storyboard-a-short, for now) does the same at once; the Quiz row's picks end
+   in "ข้าม → (เฉลย)". */
+const fillBox = (k, label = 'ช่องกรอกตัวเลข') => `<span class="fillbox" data-k="${k}"><input class="fillin" type="text" inputmode="decimal" autocomplete="off" aria-label="${label}" disabled><button class="fillchk" disabled>ตรวจ</button><button class="fillskip" type="button" disabled>ข้าม</button></span>`;
 function blanks(b = $('board')){
   const box = k => b.querySelector(`.fillbox[data-k="${k}"]`);
   return {
     check(k){                                    // a number typed into blank k, on ตรวจ or Enter
-      const x = box(k), inp = x.querySelector('.fillin'), btn = x.querySelector('.fillchk');
-      x.classList.add('now'); inp.disabled = false; btn.disabled = false;
+      const x = box(k), inp = x.querySelector('.fillin'), btn = x.querySelector('.fillchk'), skip = x.querySelector('.fillskip');
+      x.classList.add('now'); inp.disabled = false; btn.disabled = false; skip.disabled = false;
       inp.oninput = () => { inp.setAttribute('value', inp.value); x.classList.remove('wrong'); };
       setTimeout(() => { if (reading == null) inp.focus({ preventScroll:true }); }, 30);
       return cutTry(new Promise(res => {
         const go = () => { const v = parseFloat(inp.value.replace(',', '.').replace('−', '-')); if (isFinite(v)) res(v); else inp.focus(); };
         btn.onclick = e => { e.stopPropagation(); go(); };
+        skip.onclick = e => { e.stopPropagation(); res(SKIPPED); };   // ข้าม: solve() fills in the answer
         inp.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing){ e.preventDefault(); e.stopPropagation(); go(); } };
       }));
     },
@@ -5133,7 +5139,7 @@ function blanks(b = $('board')){
       x.classList.remove('now', 'right', 'wrong'); x.classList.add(ok ? 'right' : 'wrong');
       inp.value = String(v); inp.setAttribute('value', inp.value);
       if (ok){
-        inp.disabled = true; inp.setAttribute('disabled', ''); x.querySelector('.fillchk').disabled = true;
+        inp.disabled = true; inp.setAttribute('disabled', ''); x.querySelector('.fillchk').disabled = true; x.querySelector('.fillskip').disabled = true;
         b.querySelectorAll(`[data-after="${k}"]`).forEach(el => el.classList.remove('afterok'));
       }
       snd.fx(ok ? 'right' : 'wrong');
@@ -5142,14 +5148,17 @@ function blanks(b = $('board')){
 }
 // within ±2 % of the answer (o.tol), or of one of o.alt (e.g. the answer with g = 10)
 const near = (v, ans, tol = 0.02) => ans === 0 ? Math.abs(v) < 0.005 : Math.abs(v - ans) <= tol*Math.abs(ans);
+const SKIPPED = Symbol('ข้าม');                   // what B.check() returns when ข้าม is pressed
 async function solve(B, k, ans, respond, o = {}){
   const vals = [], t0 = performance.now(), give = o.give || 3;
   B.ans(k, ans);
   while (true){
-    const v = await B.check(k);
-    vals.push(v);
-    const ok = near(v, ans, o.tol) || (o.alt || []).some(a => near(v, a, o.tol));
-    const given = !ok && vals.length >= give;
+    let v = await B.check(k);
+    const skipped = v === SKIPPED;
+    if (skipped) v = ans;                            // the answer lines read v only when it is not given
+    vals.push(skipped ? 'ข้าม' : v);
+    const ok = !skipped && (near(v, ans, o.tol) || (o.alt || []).some(a => near(v, a, o.tol)));
+    const given = !ok && (skipped || vals.length >= give);
     B.mark(k, given ? +(+ans).toFixed(o.dec == null ? 2 : o.dec) : v, ok || given);
     if (ok || given) track.fill(o.id || k, vals, ok, performance.now() - t0);
     await respond(v, ok, vals.length, given);
@@ -5369,10 +5378,8 @@ async function ending(){
       <div class="law"><b>กฎข้อ 2</b> ΣF = ma แรงลัพธ์ทำให้ความเร็ว<i>เปลี่ยน</i> ไม่ได้ถูกเก็บไว้ในวัตถุ หมดแรงลัพธ์เมื่อไหร่ ความเร่งก็เป็น 0</div>
       <div class="law"><b>สมการการเคลื่อนที่</b> เมื่อความเร่งคงที่: v = u + at; s = ut + ½at²; v² = u² + 2as ใช้ทีละช่วงที่แรงลัพธ์คงที่</div>
       <div class="law"><b>กฎข้อ 3</b> กล่องดันที่กั้น = ที่กั้นดันกล่อง (ขนาดเท่ากัน ทิศตรงข้าม) กระทำต่อวัตถุคนละก้อน จึงไม่หักล้างกัน</div>
-      <div class="law"><b>โพรเจกไทล์</b> แกน x: x = v t (ไม่มีแรง); แกน y: Δy = ½ g t²; เมื่อพุ่งออกในแนวราบ เวลาลอย t = √(2h/g) ขึ้นกับความสูงอย่างเดียว</div>
     </div>
-    <div class="links"><button id="againBonus">เล่นด่านพิเศษอีกรอบ</button><button id="home">กลับหน้าหลัก</button></div>`);
-  $('againBonus').onclick = () => run(['bonus', 'end'], 'replay:bonus');
+    <div class="links"><button id="home">กลับหน้าหลัก</button></div>`);
   $('home').onclick = () => { track.restart(); Object.assign(memo, MEMO_START); titleScreen(); };
 }
 
